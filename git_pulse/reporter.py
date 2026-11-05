@@ -67,6 +67,47 @@ class Reporter:
             )
         self.console.print(churn_table)
 
+        # Bus Factor / Key-Person Risk Table
+        if summary.bus_factor and summary.bus_factor.total_analyzed_files > 0:
+            risk_style = "bold red" if summary.bus_factor.overall_risk_pct > 50 else "bold green"
+            bf_table = Table(
+                title=f"🚌 Code Ownership & Bus Factor Risk ({summary.bus_factor.at_risk_files_count}/{summary.bus_factor.total_analyzed_files} files at risk)",
+                box=ROUNDED,
+                header_style=risk_style,
+            )
+            bf_table.add_column("File Path", style="bold white")
+            bf_table.add_column("Primary Author", style="cyan")
+            bf_table.add_column("Ownership %", justify="right", style="bold yellow")
+            bf_table.add_column("Total Touches", justify="right", style="dim")
+            bf_table.add_column("Risk Status", justify="center")
+
+            for item in summary.bus_factor.file_ownerships[:8]:
+                status = "[red]HIGH RISK[/red]" if item.is_at_risk else "[green]BALANCED[/green]"
+                bf_table.add_row(
+                    item.file_path,
+                    item.primary_author,
+                    f"{item.primary_ownership_pct}%",
+                    str(item.total_commits),
+                    status,
+                )
+            self.console.print(bf_table)
+
+        # Conventional Commits Adherence
+        if summary.conventional_audit and summary.conventional_audit.total_commits > 0:
+            ca = summary.conventional_audit
+            rate_color = "green" if ca.compliance_rate >= 80 else ("yellow" if ca.compliance_rate >= 50 else "red")
+            types_str = ", ".join(f"{k}: {v}" for k, v in list(ca.type_counts.items())[:5])
+            ca_panel = Panel(
+                f"[bold]Conventional Commits Compliance:[/bold] [{rate_color}]{ca.compliance_rate}%[/{rate_color}] "
+                f"({ca.compliant_commits}/{ca.total_commits} commits)\n"
+                f"[bold]Breaking Changes (!):[/bold] {ca.breaking_changes}\n"
+                f"[bold]Top Commit Types:[/bold] {types_str if types_str else 'None'}",
+                title="📝 Commit Conventions Audit",
+                box=ROUNDED,
+                border_style=rate_color,
+            )
+            self.console.print(ca_panel)
+
         # Weekly Activity Distribution
         day_table = Table(title="📅 Commit Distribution by Day of Week", box=ROUNDED, header_style="bold magenta")
         day_table.add_column("Day", style="bold cyan")
@@ -90,6 +131,14 @@ class Reporter:
         md.append(f"- **Total Contributors:** `{summary.total_authors}`")
         md.append(f"- **Total Churn:** `+{summary.total_insertions:,}` lines / `-{summary.total_deletions:,}` lines\n")
 
+        if summary.conventional_audit:
+            ca = summary.conventional_audit
+            md.append("## 📝 Commit Conventions Audit\n")
+            md.append(f"- **Compliance Rate:** `{ca.compliance_rate}%` ({ca.compliant_commits}/{ca.total_commits})")
+            md.append(f"- **Breaking Changes:** `{ca.breaking_changes}`")
+            if ca.type_counts:
+                md.append(f"- **Type Breakdown:** " + ", ".join(f"`{k}`: {v}" for k, v in ca.type_counts.items()) + "\n")
+
         md.append("## 🏆 Top Contributors\n")
         md.append("| Author | Email | Commits | Active Days | + Added | - Deleted |")
         md.append("|:---|:---|---:|---:|---:|---:|")
@@ -101,6 +150,15 @@ class Reporter:
         md.append("|:---|---:|---:|---:|")
         for c in summary.top_churn_files[:15]:
             md.append(f"| `{c.file_path}` | {c.change_count:,} | {c.insertions:,} | {c.deletions:,} |")
+
+        if summary.bus_factor and summary.bus_factor.file_ownerships:
+            md.append("\n## 🚌 Code Ownership & Bus Factor Risk\n")
+            md.append(f"- **At-Risk Files:** `{summary.bus_factor.at_risk_files_count}` / `{summary.bus_factor.total_analyzed_files}` (`{summary.bus_factor.overall_risk_pct}%`)\n")
+            md.append("| File Path | Primary Author | Ownership % | Total Commits | Status |")
+            md.append("|:---|:---|---:|---:|:---:|")
+            for item in summary.bus_factor.file_ownerships[:10]:
+                status = "⚠️ High Risk" if item.is_at_risk else "✅ Balanced"
+                md.append(f"| `{item.file_path}` | {item.primary_author} | {item.primary_ownership_pct}% | {item.total_commits} | {status} |")
 
         md.append("\n## 📅 Weekly Commit Distribution\n")
         md.append("| Day | Commits | Activity |")
@@ -123,6 +181,18 @@ class Reporter:
             "total_deletions": summary.total_deletions,
             "first_commit": summary.first_commit_date.isoformat() if summary.first_commit_date else None,
             "last_commit": summary.last_commit_date.isoformat() if summary.last_commit_date else None,
+            "conventional_audit": {
+                "compliance_rate": summary.conventional_audit.compliance_rate,
+                "compliant_commits": summary.conventional_audit.compliant_commits,
+                "total_commits": summary.conventional_audit.total_commits,
+                "breaking_changes": summary.conventional_audit.breaking_changes,
+                "types": summary.conventional_audit.type_counts,
+            } if summary.conventional_audit else None,
+            "bus_factor": {
+                "total_files": summary.bus_factor.total_analyzed_files,
+                "at_risk_files": summary.bus_factor.at_risk_files_count,
+                "risk_pct": summary.bus_factor.overall_risk_pct,
+            } if summary.bus_factor else None,
             "authors": [
                 {
                     "name": a.name,

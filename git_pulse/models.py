@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 
 @dataclass
@@ -38,6 +38,34 @@ class ChurnMetric:
 
 
 @dataclass
+class FileOwnership:
+    file_path: str
+    primary_author: str
+    primary_ownership_pct: float
+    total_commits: int
+    authors_count: int
+    is_at_risk: bool
+
+
+@dataclass
+class BusFactorReport:
+    total_analyzed_files: int
+    at_risk_files_count: int
+    overall_risk_pct: float
+    file_ownerships: List[FileOwnership] = field(default_factory=list)
+
+
+@dataclass
+class ConventionalAuditResult:
+    total_commits: int
+    compliant_commits: int
+    compliance_rate: float
+    type_counts: Dict[str, int] = field(default_factory=dict)
+    breaking_changes: int = 0
+    non_compliant_samples: List[str] = field(default_factory=list)
+
+
+@dataclass
 class RepoSummary:
     repo_path: str
     branch: str
@@ -51,3 +79,5 @@ class RepoSummary:
     commits_by_hour: Dict[int, int]
     total_insertions: int
     total_deletions: int
+    bus_factor: Optional[BusFactorReport] = None
+    conventional_audit: Optional[ConventionalAuditResult] = None

@@ -4,22 +4,29 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "git-pulse"
-version = "0.1.0"
-description = "Repository intelligence and developer analytics CLI"
+version = "0.2.0"
+description = "⚡ Git Pulse: Modern developer repository intelligence, code churn & bus factor analytics CLI."
 readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "MIT" }
+license = "MIT"
 authors = [
     { name = "Blen Fesehaye", email = "blenfesehaye4@gmail.com" }
 ]
-keywords = ["git", "analytics", "cli", "developer-tools", "productivity", "metrics"]
+keywords = [
+    "git",
+    "git-analytics",
+    "developer-productivity",
+    "code-churn",
+    "bus-factor",
+    "conventional-commits",
+    "cli",
+    "engineering-metrics"
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -33,12 +40,14 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
 ]
 
 [project.scripts]
 git-pulse = "git_pulse.cli:main"
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["git_pulse*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-python_files = ["test_*.py"]

@@ -7,7 +7,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from .models import AuthorStats, ChurnMetric, CommitRecord, RepoSummary
+from .models import (
+    AuthorStats,
+    ChurnMetric,
+    CommitRecord,
+    RepoSummary,
+)
+from .ownership import analyze_ownership
+from .conventional import audit_commits
 
 
 class GitAnalyzer:
@@ -134,6 +141,8 @@ class GitAnalyzer:
                 commits_by_hour={h: 0 for h in range(24)},
                 total_insertions=0,
                 total_deletions=0,
+                bus_factor=None,
+                conventional_audit=None,
             )
 
         author_map: Dict[str, AuthorStats] = {}
@@ -192,6 +201,10 @@ class GitAnalyzer:
         first_date = min(dates) if dates else None
         last_date = max(dates) if dates else None
 
+        # Analyze bus factor and conventional commits compliance
+        bus_factor_report = analyze_ownership(commits)
+        conventional_report = audit_commits([c.message for c in commits])
+
         return RepoSummary(
             repo_path=str(self.repo_path),
             branch=branch,
@@ -205,4 +218,6 @@ class GitAnalyzer:
             commits_by_hour=hour_map,
             total_insertions=total_ins,
             total_deletions=total_del,
+            bus_factor=bus_factor_report,
+            conventional_audit=conventional_report,
         )
