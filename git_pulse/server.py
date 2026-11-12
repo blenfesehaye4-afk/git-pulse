@@ -34,7 +34,7 @@ def health():
 @app.get("/v1/summary")
 def get_summary(repo: str = Query(".", description="Path to target Git repository")):
     analyzer = _get_analyzer(repo)
-    summary = analyzer.get_summary()
+    summary = analyzer.analyze()
     return json.loads(_reporter.to_json(summary))
 
 
@@ -111,6 +111,6 @@ def get_standup(
 @app.get("/v1/dashboard", response_class=HTMLResponse)
 def get_dashboard(repo: str = Query(".", description="Path to target Git repository")):
     analyzer = _get_analyzer(repo)
-    summary = analyzer.get_summary()
+    summary = analyzer.analyze()
     html_content = _reporter.to_html(summary)
     return HTMLResponse(content=html_content, status_code=200)
