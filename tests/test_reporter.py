@@ -60,3 +60,31 @@ def test_reporter_json():
     assert data["branch"] == "main"
     assert data["authors"][0]["name"] == "Moa"
     assert data["churn_hotspots"][0]["file"] == "app.py"
+
+
+def test_reporter_html():
+    summary = RepoSummary(
+        repo_path="/test/repo",
+        branch="main",
+        total_commits=15,
+        total_authors=2,
+        first_commit_date=datetime(2025, 1, 1),
+        last_commit_date=datetime(2025, 1, 10),
+        top_authors=[
+            AuthorStats(name="Alice", email="alice@test.com", commit_count=10, insertions=200, deletions=40, active_days=5)
+        ],
+        top_churn_files=[
+            ChurnMetric(file_path="engine.py", change_count=8, insertions=150, deletions=30)
+        ],
+        commits_by_day_of_week={"Monday": 10, "Tuesday": 5},
+        commits_by_hour={12: 15},
+        total_insertions=200,
+        total_deletions=40,
+    )
+    reporter = Reporter()
+    html = reporter.to_html(summary)
+    assert "<!DOCTYPE html>" in html
+    assert "⚡ Git Pulse Analytics Dashboard" in html
+    assert "<svg" in html
+    assert "Alice" in html
+    assert "engine.py" in html
